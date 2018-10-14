@@ -1,0 +1,121 @@
+#!/usr/bin/env python
+# -*- coding: UTF-8 -*-
+'''
+用户样本取 8 、 9、10日新增用户且近3日活跃的用户
+id  名字   付费金额   卡牌id   卡牌等级   卡牌进阶等级   卡牌飞升等级
+'''
+import settings_dev
+from utils import hql_to_df, update_mysql, ds_add, date_range
+from pandas import DataFrame
+import pandas as pd
+
+# def reg_card_equip():
+#     reg_sql = '''
+#     SELECT user_id,
+#            card_dict
+#     FROM mid_info_all
+#     WHERE ds = '20160814'
+#       AND to_date(reg_time) in ('2016-08-08','2016-08-09','2016-08-10')
+#       AND user_id IN
+#       (SELECT user_id
+#       FROM parse_info
+#       WHERE ds >= '20160812'
+#         AND ds <= '20160814')
+#     '''
+#     reg_df = hql_to_df(reg_sql)
+#     used_pos = set(range(1, 10, 1))
+#     c_user_id = []
+#     c_id, c_used, c_evo,c_level = [], [], [], []
+#     for _, row in reg_df.iterrows():
+#         for card_id, card_info in eval(row['card_dict']).iteritems():
+#             c_user_id.append(row.user_id)
+#             c_id.append(card_info['c_id'])
+#             c_used.append(card_info['pos'])
+#             c_evo.append(card_info['evo'])
+#             c_level.append(card_info['level'])
+#     card_df = DataFrame({'user_id': c_user_id, 'c_level': c_level, 'c_id': c_id, 'c_used': c_used, 'c_evo': c_evo})
+
+#     pay_sql = '''
+#     SELECT user_id,
+#            sum(order_money) AS pya_rmb
+#     FROM raw_paylog
+#     WHERE platform_2 != 'admin_test'
+#       AND ds >= '20160808'
+#     GROUP BY user_id
+#     '''
+#     pay_df = hql_to_df(pay_sql)
+#     result_df = card_df.merge(pay_df,on='user_id',how='left')
+#     result_df = result_df.fillna(0)
+#     # writer = pd.ExcelWriter('/Users/kaiqigu/Documents/dancer/tmp_20160815_card_info.xlsx')
+#     result_df.to_excel('/Users/kaiqigu/Documents/dancer/tmp_20160815_card_info.xlsx')
+
+def reg_card_equip():
+    card_sql = '''
+    SELECT user_id,
+           card_dict
+    FROM mid_info_all
+    WHERE ds = '20160814'
+      AND to_date(reg_time) in ('2016-08-08','2016-08-09','2016-08-10')
+      AND user_id IN
+      (SELECT user_id
+      FROM parse_info
+      WHERE ds >= '20160812'
+        AND ds <= '20160814')
+    '''
+    df_card = hql_to_df(card_sql)
+    c_user_id = []
+    c_id, c_used = [], []
+    for _, row in df_card.iterrows():
+        for card_id, card_info in eval(row['card_dict']).iteritems():
+            c_user_id.append(row.user_id)
+            c_id.append(card_info['c_id'])
+            c_used.append(card_info['pos'])
+    card_df = DataFrame({'user_id': c_user_id, 'c_id': c_id, 'c_used': c_used})
+    used_card_df = card_df[card_df['c_used'] != '-1']
+    print used_card_df
+
+    equip_sql = '''
+    SELECT user_id,
+           equip_dict
+    FROM mid_info_all
+    WHERE ds = '20160814'
+      AND to_date(reg_time) in ('2016-08-08','2016-08-09','2016-08-10')
+      AND user_id IN
+      (SELECT user_id
+      FROM parse_info
+      WHERE ds >= '20160812'
+        AND ds <= '20160814')
+    '''
+    df_equip = hql_to_df(equip_sql)
+    e_user_id = []
+    e_id, e_used, e_evo = [], [], []
+    for _, row in df_equip.iterrows():
+        for equip_id, equip_info in eval(row['equip_dict']).iteritems():
+            e_user_id.append(row.user_id)
+            e_id.append(equip_info['c_id'])
+            e_used.append(equip_info['pos'])
+            e_evo.append(equip_info['evo'])
+    equip_df = DataFrame({'user_id': e_user_id, 'e_id': e_id, 'e_evo':e_evo , 'c_used': e_used})
+    used_equip_df = equip_df[equip_df['c_used'] != -1]
+    print used_equip_df
+
+    merge_df = used_equip_df.merge(used_card_df,on=['c_used','user_id'],how='left')
+
+    pay_sql = '''
+    SELECT user_id,
+           sum(order_money) AS pya_rmb
+    FROM raw_paylog
+    WHERE platform_2 != 'admin_test'
+      AND ds >= '20160808'
+    GROUP BY user_id
+    '''
+    pay_df = hql_to_df(pay_sql)
+
+    result_df = merge_df.merge(pay_df,on='user_id',how='left')
+    colmns = ['user_id','pya_rmb','e_id','c_used','e_evo','c_id']
+    result_df = result_df[colmns].fillna(0)
+    print result_df
+    result_df.to_excel('/Users/kaiqigu/Documents/dancer/tmp_20160815_equip_info.xlsx')
+if __name__ == '__main__':
+    settings_dev.set_env('dancer_tw')
+    reg_card_equip()

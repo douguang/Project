@@ -1,0 +1,93 @@
+#!/usr/bin/env python
+# -*- coding: UTF-8 -*-
+'''
+Author      : Dong Junshuang
+Description :
+'''
+import datetime
+# 下载配置的url
+# url = 'http://pub.kaiqigu.net/genesisandroidios'
+url = 'http://125.212.211.20/vnbs'
+# 代码目录
+code_dir = 'superhero'
+# 代码目录
+code = 'superhero_vt'
+
+start_date = datetime.date(2014, 12, 19)
+
+local_data_dir = '/home/data/superhero_vt/'
+remote_data_dir = '118.186.70.86:/data/superhero_vt/'
+raw_table_path = {
+    'raw_act': '/home/data/superhero_vietnam/active_user/act_{date}',
+    'raw_action_log':
+    '/home/data/superhero_vietnam/action_log/vt_action_log_{date}',
+    'raw_active_stats':
+    '/home/data/superhero_vietnam/redis_stats/active_stats_{date}',
+    'raw_card': '/home/data/superhero_vietnam/redis_stats/card_{date}',
+    'raw_equip': '/home/data/superhero_vietnam/redis_stats/equip_{date}',
+    'raw_gem': '/home/data/superhero_vietnam/redis_stats/gem_{date}',
+    'raw_info': '/home/data/superhero_vietnam/redis_stats/info_{date}',
+    'raw_item': '/home/data/superhero_vietnam/redis_stats/item_{date}',
+    'raw_paylog': '/home/data/superhero_vietnam/paylog/paylog_{date}',
+    'raw_pet': '/home/data/superhero_vietnam/redis_stats/pet_{date}',
+    'raw_reg': '/home/data/superhero_vietnam/new_user/reg_{date}',
+    'raw_soul': '/home/data/superhero_vietnam/redis_stats/soul_{date}',
+    'raw_spendlog': '/home/data/superhero_vietnam/spendlog/spendlog_{date}',
+    'raw_super_step':'/home/data/superhero_vietnam/redis_stats/card_super_step_{date}',
+    'raw_nginx': '/home/data/superhero_vietnam/nginx_log/access.log_{date}',
+}
+
+job_deps = {
+    'raw_action_log': [],
+    'raw_act': [],
+    'raw_active_stats': [],
+    'raw_card': [],
+    'raw_equip': [],
+    'raw_gem': [],
+    'raw_info': [],
+    'raw_item': [],
+    'raw_paylog': [],
+    'raw_pet': [],
+    'raw_reg': [],
+    'raw_soul': [],
+    'raw_spendlog': [],
+    'raw_super_step': [],
+    # 'mid_paylog_all': ['raw_paylog'],
+    # 'mid_gs': ['raw_paylog'],
+    'mid_info_all': ['raw_info'],
+    'mid_new_account': ['raw_reg', 'raw_info', 'mid_info_all'],
+    # 用户中间整合数据
+    'mart_assist':
+    ['raw_info', 'raw_paylog', 'raw_spendlog', 'raw_reg', 'mart_paylog'],
+    'mart_card': ['raw_info', 'raw_card', 'raw_super_step'],  # 卡牌中间整合数据
+    'mart_paylog': ['raw_paylog', 'mid_info_all'],  # 所有用户历史充值总额
+    'parse_nginx': [],
+    # # 用户
+    'dis_daily_data': ['mart_assist'],  # 日常数据
+    'dis_vip_level_dst': ['mart_assist'],  # vip等级分布
+    'dis_keep_rate': ['raw_reg', 'raw_info'],  # 留存率
+    'dis_new_server': ['mart_assist', 'raw_reg', 'raw_act'],  # 新服数据
+    # 卡牌 - 卡牌转生、进阶、超进化
+    'dis_card': ['mart_card', 'raw_super_step', 'mart_assist'],
+    # 营收
+    'dis_day_coin_spend': ['mid_info_all', 'mart_assist'],  # 每日钻石消费
+    'dis_spend_detail': ['raw_spendlog'],  # 分接口钻石消费
+    'dis_reg_user_ltv': ['raw_paylog', 'mid_new_account'],  # 注册用户LTV(account)
+    'dis_act_user_coin_save': ['mart_assist'],  # 活跃玩家钻石存量
+    'dis_pay_ivtl': ['mart_assist'],  # 充值档次分布
+    'dis_user_pay_detail':
+    ['mid_new_account', 'mart_assist', 'mart_paylog'],  # 用户付费情况
+    'dis_pay_rate': ['mart_assist'],  # 付费用户收入占比
+    'dis_pay_platform': ['raw_paylog'],  # 充值的渠道金额统计
+    'dis_revenu_buy': ['raw_paylog', 'raw_action_log'],  # 黄金组合拳
+    # 活动
+    'dis_activity_bowl': ['raw_action_log'],  # 聚宝盆活动
+    # 周期报表
+    'dis_cycle_data': ['mart_assist'],  # 周期数据
+}
+
+# 不依赖前一天的hive数据的mid表
+independent_list = ['mid_new_account']
+
+# 依赖前一天的任务
+dependent_list = ['mart_paylog']

@@ -1,0 +1,14 @@
+*.pyc
+cache/
+config/
+history/
+log/
+audit/
+history_task/
+.idea/
+tmp_script/
+.settings/
+.pydevproject
+.project
+.vscode/
+pylint.conf
