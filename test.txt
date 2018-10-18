@@ -1,4 +1,4 @@
 hello world1
 hello world2
 hello world3
-creating new branch is quick & simple
+creating a new branch is quick and simple
